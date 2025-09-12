@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: polkadot-archive
+  namespace: polkadot
+spec:
+  serviceName: polkadot-archive
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  selector:
+    matchLabels:
+      app: polkadot-archive
+  template:
+    metadata:
+      labels:
+        app: polkadot-archive
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+      - name: polkadot-archive
+        image: parity/polkadot:stable2412-2
+        resources: {}
+          # requests:
+          #   cpu: "1"
+          #   memory: 6Gi
+        args:
+          - --name=polytopes-polkadot-archive-fullnode
+          - --rpc-external
+          - --unsafe-rpc-external
+          - --chain=polkadot
+          - --prometheus-external
+          - --enable-offchain-indexing=true 
+          - --telemetry-url=wss://telemetry.polkadot.io/submit 0
+          - --telemetry-url=wss://telemetry.blockops.network/submit 0
+          - --base-path=/data/polkadot
+          - --listen-addr=/ip4/0.0.0.0/tcp/30334
+          - --public-addr=/ip4/127.0.0.1/tcp/30334
+          - --enable-log-reloading
+          - --prometheus-port=9615
+          - --state-pruning=archive
+          - --blocks-pruning=archive
+          - --rpc-port=9944
+          - --in-peers=50
+          - --out-peers=50
+          - --rpc-cors=all
+          - --rpc-methods=unsafe
+          - --max-runtime-instances=32
+          - --rpc-max-connections=1000000
+        volumeMounts:
+          - name: polkadot-archive-data
+            mountPath: /data
+        ports:
+        - containerPort: 9944
+          name: rpc-port
+        - containerPort: 9933
+          name: ws-port
+        - containerPort: 9615
+          name: metrics
+        - containerPort: 9616
+          name: relay-metrics
+        - containerPort: 30333
+          name: relay-port
+        - containerPort: 30334
+          name: para-port
+        imagePullPolicy: Always
+  volumeClaimTemplates:
+  - metadata:
+      name: polkadot-archive-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: do-block-storage
+      resources:
+        requests:
+          storage: 3000Gi

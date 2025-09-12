@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: polkadot-archive-service
+  labels:
+    app: polkadot-archive-service
+spec:
+  type: ClusterIP
+  ports:
+  - name: ws-port
+    port: 80
+    targetPort: 9944
+  - name: metrics
+    port: 9615
+  - name: relay-metrics
+    port: 9616
+  selector:
+    app: polkadot-archive
