@@ -1,0 +1,120 @@
+name: "ethereum-hoodi"
+namespace: "ethereum-hoodi"
+
+node:
+  replicas: 1
+  name: node
+  image:
+    tag: v1.15.6
+  command:
+    - geth
+  extraArgs:
+    - --hoodi
+    - --config=/node/config.toml
+    - --datadir=/database/
+    - --cache=10240
+    - --snapshot=false
+    - --authrpc.addr=0.0.0.0
+    - --authrpc.port=8551
+    - --authrpc.vhosts=*
+    - --authrpc.jwtsecret=/node/jwtsecret
+    - --rpc.batch-request-limit=5000
+    - --rpc.evmtimeout=0
+    - --port=$EXTERNAL_PORT_0
+    - --nat=extip:$EXTERNAL_IP
+  resources:
+    requests:
+      cpu: 2
+      memory: 6Gi
+    limits:
+      memory: 32Gi
+  ingress:
+    private:
+      enabled: true
+      hostname: ethereum-hoodi.internal.blockops.network
+      className:  nginx
+  storage:
+    size: 600Gi
+    annotations:
+      resize.topolvm.io/storage_limit: "1200Gi"
+      resize.topolvm.io/threshold: "20%"
+      resize.topolvm.io/increase: "100Gi"
+  ports:
+    auth:
+      port: 8551
+    p2p:
+      nodePortStart: 32000
+  externalP2P:
+    enabled: true
+    externalPortCount: 3
+  livenessProbe:
+    failureThreshold: 600
+    periodSeconds: 15
+    successThreshold: 1
+    tcpSocket:
+      port: 8545
+    timeoutSeconds: 1
+  sidecar:
+    enabled: true
+    name: lighthouse
+    image:
+      repo: sigp/lighthouse
+      tag: v7.0.0-beta.5
+    defaultArgs: false
+    livenessProbe:
+      failureThreshold: 4
+      periodSeconds: 15
+      initialDelaySeconds: 120
+      successThreshold: 1
+      tcpSocket:
+        port: 5001
+    readinessProbe:
+      failureThreshold: 4
+      periodSeconds: 15
+      initialDelaySeconds: 120
+      successThreshold: 1
+      tcpSocket:
+        port: 5001
+    command:
+      - lighthouse
+    args:
+      - bn
+      - --network=hoodi
+      - --checkpoint-sync-url=https://hoodi-checkpoint-sync.attestant.io/
+      - --execution-endpoint=http://localhost:8551
+      - --execution-jwt=/setup/jwtsecret
+      - --datadir=/database/lighthouse
+      - --builder=http://127.0.0.1:18550
+      - --http
+      - --http-address=0.0.0.0
+      - --http-port=5001
+      - --metrics
+      - --metrics-address=0.0.0.0
+      - --metrics-port=8008
+      - --metrics-allow-origin=*
+      - --port=$EXTERNAL_PORT_1
+      - --quic-port=$EXTERNAL_PORT_2
+      - --enr-address=$EXTERNAL_IP
+    ports:
+      rpc:
+        port: 5001
+      p2p:
+        nodePortStart: 32005
+      quic:
+        nodePortStart: 32010
+    externalP2P:
+      enabled: true
+    resources:
+      requests:
+        cpu: 2
+        memory: 6Gi
+    storage:
+      size: 200Gi
+      annotations:
+        resize.topolvm.io/storage_limit: "500Gi"
+        resize.topolvm.io/threshold: "20%"
+        resize.topolvm.io/increase: "50Gi"
+
+  extraConfigFiles:
+    jwtsecret: 00deb828985d5de25794f6096f6755e0c137979bda8be8155f533579694aec58
+  
