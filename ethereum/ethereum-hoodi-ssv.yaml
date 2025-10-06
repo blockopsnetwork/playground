@@ -1,0 +1,138 @@
+name: "ethereum-hoodi-ssv-anchor"
+namespace: "ethereum-hoodi-ssv-anchor"
+
+healthcheck:
+  enabled: false
+
+serviceAccount:
+  create: true
+  annotations: {}
+rbac:
+  create: true
+  clusterRules:
+    - apiGroups: [""]
+      resources: ["nodes"]
+      verbs: ["get", "list", "watch"]
+  rules:
+    - apiGroups: [""]
+      resources: ["services"]
+      verbs: ["get", "list", "watch"]
+
+disableAutoLabels: true
+labels:
+  network: ethereum
+  chain: hoodi
+  node-type: validator
+  chain-type: dvt
+  client: anchor
+
+node:
+  name: ssv-anchor
+  replicas: 1
+  image:
+    repo: sigp/anchor
+    tag: latest
+  defaultArgs: false
+  debugMode: false
+  envVars:
+    GENERATE_OPERATOR_KEY: "false"
+    LOG_FILE_PATH: "/database/logs/debug.log"
+  command:
+    - anchor
+  preExecCommand: |-
+    export HOST_ADDRESS=$EXTERNAL_IP;
+    export TCP_PORT=$EXTERNAL_PORT_0;
+    export UDP_PORT=$EXTERNAL_PORT_1;
+  args:
+    - node
+    - --network=hoodi
+    - --datadir=/database
+    - --beacon-nodes=https://ethereum-hoodi-beacon-api.publicnode.com
+    - --execution-rpc=https://ethereum-hoodi-rpc.publicnode.com
+    - --execution-ws=wss://ethereum-hoodi-rpc.publicnode.com
+    - --metrics
+  extraArgs: []
+  resources:
+    requests:
+      cpu: 2
+      memory: 2Gi
+    limits:
+      memory: 2Gi
+  ingress:
+    private:
+      enabled: false
+    public:
+      enabled: false
+  serviceMonitor:
+    enabled: true
+    path: /metrics
+  storage:
+    size: 20Gi
+    annotations:
+      resize.topolvm.io/storage_limit: "100Gi"
+      resize.topolvm.io/threshold: "20%"
+      resize.topolvm.io/increase: "20Gi"
+  ports:
+    tcp:
+      nodePortStart: 32015
+    udp:
+      nodePortStart: 32030
+    prom:
+      port: 15000
+    p2p:
+      port: 0
+    ws:
+      port: 0
+    rpc:
+      port: 0
+  livenessProbe:
+    failureThreshold: 200
+    periodSeconds: 15
+    initialDelaySeconds: 120
+    successThreshold: 1
+    httpGet:
+      path: /health
+      port: 15000
+    timeoutSeconds: 3
+  readinessProbe:
+    failureThreshold: 200
+    periodSeconds: 15
+    initialDelaySeconds: 120
+    successThreshold: 1
+    httpGet:
+      path: /health
+      port: 15000
+    timeoutSeconds: 3
+  externalP2P:
+    enabled: true
+    externalPortCount: 2
+  pdb:
+    enabled: false
+  sidecar:
+    enabled: false
+
+  snapshots:
+    enabled: false
+    argo:
+      enabled: true
+    defaultNodeKeyPaths: []
+  
+  extraVolumes:
+    - name: operator-key
+      secret:
+        secretName: ethereum-hoodi-ssv-operator-key-0
+  extraVolumeMounts:
+    - name: operator-key
+      mountPath: /secrets
+      readOnly: true
+
+  # additionalContainers:
+  #   - name: ssv-anchor-dkg
+  #     image: sigp/anchor:latest
+  #     command: ["anchor", "keygen"]
+  #     args:
+  #       - --output-path
+  #       - "/keys"
+  #     volumeMounts:
+  #       - name: operator-key
+  #         mountPath: /keys
