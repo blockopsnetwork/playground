@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: node
-          image: ethereum/client-go:v1.15.6
+          image: ethereum/client-go:v1.16.2
           command:
             - geth
           args:
