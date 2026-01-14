@@ -20,169 +20,169 @@ spec:
         app.kubernetes.io/component: node
     spec:
       containers:
-        - name: node
-          image: ethereum/client-go:v1.15.6
-          command:
-            - geth
-          args:
-            - --hoodi
-            - --config=/node/config.toml
-            - --datadir=/database/
-            - --cache=10240
-            - --snapshot=false
-            - --authrpc.addr=0.0.0.0
-            - --authrpc.port=8551
-            - --authrpc.vhosts=*
-            - --authrpc.jwtsecret=/node/jwtsecret
-            - --rpc.batch-request-limit=5000
-            - --rpc.evmtimeout=0
-            - --port=$(EXTERNAL_PORT_0)
-            - --nat=extip:$(EXTERNAL_IP)
-          env:
-            - name: EXTERNAL_PORT_0
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.annotations['blockops.network/external-port-0']
-            - name: EXTERNAL_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-          resources:
-            requests:
-              cpu: "2"
-              memory: 6Gi
-            limits:
-              memory: 32Gi
-          ports:
-            - name: authrpc
-              containerPort: 8551
-              protocol: TCP
-            - name: p2p
-              containerPort: 30303
-              protocol: TCP
-            - name: p2p-udp
-              containerPort: 30303
-              protocol: UDP
-            - name: rpc
-              containerPort: 8545
-              protocol: TCP
-            - name: ws
-              containerPort: 8546
-              protocol: TCP
-          livenessProbe:
-            failureThreshold: 600
-            periodSeconds: 15
-            successThreshold: 1
-            timeoutSeconds: 1
-            tcpSocket:
-              port: 8545
-          volumeMounts:
-            - name: node-data
-              mountPath: /database
-            - name: node-config
-              mountPath: /node
-        - name: lighthouse
-          image: sigp/lighthouse:v7.0.0-beta.5
-          command:
-            - lighthouse
-          args:
-            - bn
-            - --network=hoodi
-            - --checkpoint-sync-url=https://hoodi-checkpoint-sync.attestant.io/
-            - --execution-endpoint=http://localhost:8551
-            - --execution-jwt=/setup/jwtsecret
-            - --datadir=/database/lighthouse
-            - --builder=http://127.0.0.1:18550
-            - --http
-            - --http-address=0.0.0.0
-            - --http-port=5001
-            - --metrics
-            - --metrics-address=0.0.0.0
-            - --metrics-port=8008
-            - --metrics-allow-origin=*
-            - --port=$(EXTERNAL_PORT_1)
-            - --quic-port=$(EXTERNAL_PORT_2)
-            - --enr-address=$(EXTERNAL_IP)
-          env:
-            - name: EXTERNAL_PORT_1
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.annotations['blockops.network/external-port-1']
-            - name: EXTERNAL_PORT_2
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.annotations['blockops.network/external-port-2']
-            - name: EXTERNAL_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-          resources:
-            requests:
-              cpu: "2"
-              memory: 6Gi
-          ports:
-            - name: lighthouse-http
-              containerPort: 5001
-              protocol: TCP
-            - name: lighthouse-metrics
-              containerPort: 8008
-              protocol: TCP
-            - name: lighthouse-p2p
-              containerPort: 9000
-              protocol: TCP
-            - name: lighthouse-p2p-udp
-              containerPort: 9000
-              protocol: UDP
-          livenessProbe:
-            failureThreshold: 4
-            periodSeconds: 15
-            initialDelaySeconds: 120
-            successThreshold: 1
-            tcpSocket:
-              port: 5001
-          readinessProbe:
-            failureThreshold: 4
-            periodSeconds: 15
-            initialDelaySeconds: 120
-            tcpSocket:
-              port: 5001
-          volumeMounts:
-            - name: lighthouse-data
-              mountPath: /database/lighthouse
-            - name: node-config
-              mountPath: /setup
-      volumes:
+      - name: node
+        image: ethereum/client-go:v1.16.8
+        command:
+        - geth
+        args:
+        - --hoodi
+        - --config=/node/config.toml
+        - --datadir=/database/
+        - --cache=10240
+        - --snapshot=false
+        - --authrpc.addr=0.0.0.0
+        - --authrpc.port=8551
+        - --authrpc.vhosts=*
+        - --authrpc.jwtsecret=/node/jwtsecret
+        - --rpc.batch-request-limit=5000
+        - --rpc.evmtimeout=0
+        - --port=$(EXTERNAL_PORT_0)
+        - --nat=extip:$(EXTERNAL_IP)
+        env:
+        - name: EXTERNAL_PORT_0
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['blockops.network/external-port-0']
+        - name: EXTERNAL_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        resources:
+          requests:
+            cpu: '2'
+            memory: 6Gi
+          limits:
+            memory: 32Gi
+        ports:
+        - name: authrpc
+          containerPort: 8551
+          protocol: TCP
+        - name: p2p
+          containerPort: 30303
+          protocol: TCP
+        - name: p2p-udp
+          containerPort: 30303
+          protocol: UDP
+        - name: rpc
+          containerPort: 8545
+          protocol: TCP
+        - name: ws
+          containerPort: 8546
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 600
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 1
+          tcpSocket:
+            port: 8545
+        volumeMounts:
+        - name: node-data
+          mountPath: /database
         - name: node-config
-          secret:
-            secretName: ethereum-hoodi-config
-            items:
-              - key: jwtsecret
-                path: jwtsecret
+          mountPath: /node
+      - name: lighthouse
+        image: sigp/lighthouse:v7.0.0-beta.5
+        command:
+        - lighthouse
+        args:
+        - bn
+        - --network=hoodi
+        - --checkpoint-sync-url=https://hoodi-checkpoint-sync.attestant.io/
+        - --execution-endpoint=http://localhost:8551
+        - --execution-jwt=/setup/jwtsecret
+        - --datadir=/database/lighthouse
+        - --builder=http://127.0.0.1:18550
+        - --http
+        - --http-address=0.0.0.0
+        - --http-port=5001
+        - --metrics
+        - --metrics-address=0.0.0.0
+        - --metrics-port=8008
+        - --metrics-allow-origin=*
+        - --port=$(EXTERNAL_PORT_1)
+        - --quic-port=$(EXTERNAL_PORT_2)
+        - --enr-address=$(EXTERNAL_IP)
+        env:
+        - name: EXTERNAL_PORT_1
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['blockops.network/external-port-1']
+        - name: EXTERNAL_PORT_2
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['blockops.network/external-port-2']
+        - name: EXTERNAL_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        resources:
+          requests:
+            cpu: '2'
+            memory: 6Gi
+        ports:
+        - name: lighthouse-http
+          containerPort: 5001
+          protocol: TCP
+        - name: lighthouse-metrics
+          containerPort: 8008
+          protocol: TCP
+        - name: lighthouse-p2p
+          containerPort: 9000
+          protocol: TCP
+        - name: lighthouse-p2p-udp
+          containerPort: 9000
+          protocol: UDP
+        livenessProbe:
+          failureThreshold: 4
+          periodSeconds: 15
+          initialDelaySeconds: 120
+          successThreshold: 1
+          tcpSocket:
+            port: 5001
+        readinessProbe:
+          failureThreshold: 4
+          periodSeconds: 15
+          initialDelaySeconds: 120
+          tcpSocket:
+            port: 5001
+        volumeMounts:
+        - name: lighthouse-data
+          mountPath: /database/lighthouse
+        - name: node-config
+          mountPath: /setup
+      volumes:
+      - name: node-config
+        secret:
+          secretName: ethereum-hoodi-config
+          items:
+          - key: jwtsecret
+            path: jwtsecret
   volumeClaimTemplates:
-    - metadata:
-        name: node-data
-        annotations:
-          resize.topolvm.io/storage_limit: "1200Gi"
-          resize.topolvm.io/threshold: "20%"
-          resize.topolvm.io/increase: "100Gi"
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 600Gi
-    - metadata:
-        name: lighthouse-data
-        annotations:
-          resize.topolvm.io/storage_limit: "500Gi"
-          resize.topolvm.io/threshold: "20%"
-          resize.topolvm.io/increase: "50Gi"
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 200Gi
+  - metadata:
+      name: node-data
+      annotations:
+        resize.topolvm.io/storage_limit: 1200Gi
+        resize.topolvm.io/threshold: 20%
+        resize.topolvm.io/increase: 100Gi
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 600Gi
+  - metadata:
+      name: lighthouse-data
+      annotations:
+        resize.topolvm.io/storage_limit: 500Gi
+        resize.topolvm.io/threshold: 20%
+        resize.topolvm.io/increase: 50Gi
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 200Gi
 ---
 apiVersion: v1
 kind: Service
@@ -198,26 +198,26 @@ spec:
     app.kubernetes.io/name: ethereum-hoodi
     app.kubernetes.io/component: node
   ports:
-    - name: authrpc
-      port: 8551
-      targetPort: 8551
-      protocol: TCP
-    - name: rpc
-      port: 8545
-      targetPort: 8545
-      protocol: TCP
-    - name: ws
-      port: 8546
-      targetPort: 8546
-      protocol: TCP
-    - name: p2p
-      port: 30303
-      targetPort: 30303
-      protocol: TCP
-    - name: p2p-udp
-      port: 30303
-      targetPort: 30303
-      protocol: UDP
+  - name: authrpc
+    port: 8551
+    targetPort: 8551
+    protocol: TCP
+  - name: rpc
+    port: 8545
+    targetPort: 8545
+    protocol: TCP
+  - name: ws
+    port: 8546
+    targetPort: 8546
+    protocol: TCP
+  - name: p2p
+    port: 30303
+    targetPort: 30303
+    protocol: TCP
+  - name: p2p-udp
+    port: 30303
+    targetPort: 30303
+    protocol: UDP
 ---
 apiVersion: v1
 kind: Secret
